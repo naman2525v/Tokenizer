@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-Powered Tokenizer &amp; Vocabulary Analyzer</title>
+  <meta name="description" content="Interactive tokenizer tool with Word, Character, and BPE subword tokenization, vocabulary analysis, and visualizations." />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <!-- Chart.js from CDN (loaded at bottom too for safety) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+<!-- ================================================================== -->
+<!--  HEADER                                                            -->
+<!-- ================================================================== -->
+<header class="app-header">
+  <div class="header-left">
+    <div class="header-logo">T</div>
+    <div>
+      <div class="header-title">AI Tokenizer</div>
+      <div class="header-subtitle">Text Tokenization &amp; Vocabulary Analyzer</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="theme-label" id="theme-label">☀️ Light</span>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode"></button>
+  </div>
+</header>
+
+<!-- ================================================================== -->
+<!--  MAIN CONTENT                                                      -->
+<!-- ================================================================== -->
+<main class="app-main">
+
+  <!-- ============================================================== -->
+  <!--  1. TEXT INPUT                                                  -->
+  <!-- ============================================================== -->
+  <section class="section" id="input-section">
+    <div class="section-title">
+      <span class="icon">📝</span> Text Input
+    </div>
+    <textarea class="input-area" id="text-input"
+      placeholder="Enter or paste text here to analyze… e.g. &quot;I love AI and I love Python&quot;"
+      spellcheck="false"></textarea>
+
+    <!-- Sample text shortcuts -->
+    <div class="sample-buttons">
+      <button class="sample-btn" data-sample="simple">Simple Sentence</button>
+      <button class="sample-btn" data-sample="paragraph">Paragraph</button>
+      <button class="sample-btn" data-sample="code">Code Snippet</button>
+      <button class="sample-btn" data-sample="multilingual">Mixed Content</button>
+    </div>
+
+    <div class="controls">
+      <select class="method-select" id="tokenization-method">
+        <option value="word">🔤 Word-Level Tokenization</option>
+        <option value="char">🔡 Character-Level Tokenization</option>
+        <option value="bpe">🧩 Subword Tokenization (BPE)</option>
+      </select>
+
+      <div class="merge-count-wrapper hidden" id="merge-count-wrapper">
+        <label for="merge-count">BPE merges:</label>
+        <input type="number" id="merge-count" value="50" min="1" max="500" />
+      </div>
+
+      <button class="btn btn-primary" id="tokenize-btn">⚡ Tokenize</button>
+      <button class="btn btn-secondary" id="clear-btn">🧹 Clear</button>
+      <button class="btn btn-danger btn-sm" id="reset-btn">↺ Reset All</button>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!--  2. STATISTICS DASHBOARD                                       -->
+  <!-- ============================================================== -->
+  <section class="section hidden" id="stats-section">
+    <div class="section-title">
+      <span class="icon">📊</span> Statistics Dashboard
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🔣</div>
+        <div class="stat-value" id="stat-chars">0</div>
+        <div class="stat-label">Total Characters</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📄</div>
+        <div class="stat-value" id="stat-words">0</div>
+        <div class="stat-label">Total Words</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🧩</div>
+        <div class="stat-value" id="stat-tokens">0</div>
+        <div class="stat-label">Total Tokens</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💎</div>
+        <div class="stat-value" id="stat-unique">0</div>
+        <div class="stat-label">Unique Tokens</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value" id="stat-vocab-size">0</div>
+        <div class="stat-label">Vocabulary Size</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏷️</div>
+        <div class="stat-value" id="stat-token-ids">0</div>
+        <div class="stat-label">Total Token IDs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📏</div>
+        <div class="stat-value" id="stat-avg-length">0</div>
+        <div class="stat-label">Avg Token Length</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-value" id="stat-most-frequent">—</div>
+        <div class="stat-label">Most Frequent</div>
+        <div class="stat-sublabel" id="stat-most-freq-count"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!--  3. HIGHLIGHTED TOKENS                                         -->
+  <!-- ============================================================== -->
+  <section class="section hidden" id="highlighted-section">
+    <div class="section-title">
+      <span class="icon">🎨</span> Token Visualization
+      <span class="section-badge" id="highlight-method-badge">word</span>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" id="token-search" type="text" placeholder="🔍 Search for a token…" />
+      <span class="search-count" id="search-count"></span>
+    </div>
+    <div class="highlighted-text-area" id="highlighted-text"></div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!--  4. VOCABULARY TABLE                                           -->
+  <!-- ============================================================== -->
+  <section class="section hidden" id="vocabulary-section">
+    <div class="section-title">
+      <span class="icon">📖</span> Vocabulary
+      <span class="section-badge" id="vocab-count-badge">0</span>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" id="vocab-search" type="text" placeholder="🔍 Filter vocabulary…" />
+    </div>
+    <div class="table-wrapper">
+      <table class="vocab-table" id="vocab-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Token</th>
+            <th>Token ID</th>
+            <th>Frequency</th>
+            <th>Distribution</th>
+          </tr>
+        </thead>
+        <tbody id="vocab-table-body"></tbody>
+      </table>
+    </div>
+    <div class="export-bar">
+      <button class="btn btn-success btn-sm" id="download-csv-btn">📥 Download CSV</button>
+      <button class="btn btn-secondary btn-sm" id="export-json-btn">📤 Export JSON</button>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!--  5. TOKEN ID MAPPING                                           -->
+  <!-- ============================================================== -->
+  <section class="section hidden" id="mapping-section">
+    <div class="section-title">
+      <span class="icon">🗺️</span> Token → ID Mapping
+    </div>
+    <div class="mapping-grid" id="mapping-grid"></div>
+
+    <div style="margin-top:1.5rem">
+      <div class="section-title" style="font-size:.95rem">
+        <span class="icon">🔢</span> Encoded Output Sequence
+      </div>
+      <div class="encoded-output" id="encoded-output"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!--  6. CHARTS                                                     -->
+  <!-- ============================================================== -->
+  <section class="section hidden" id="charts-section">
+    <div class="section-title">
+      <span class="icon">📈</span> Visual Analysis
+    </div>
+    <div class="charts-grid">
+      <div class="chart-box">
+        <h3>📊 Token Frequency Bar Chart</h3>
+        <canvas id="frequency-chart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>🥧 Vocabulary Distribution</h3>
+        <canvas id="pie-chart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>📈 Vocabulary Growth</h3>
+        <canvas id="growth-chart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!--  7. EXPLANATION                                                -->
+  <!-- ============================================================== -->
+  <section class="section" id="explanation-section">
+    <div class="section-title">
+      <span class="icon">📘</span> How Tokenization Works
+    </div>
+    <div class="explanation-content" id="explanation-content">
+      <p>Tokenization is the process of breaking text into smaller units called <strong>tokens</strong>. It is a foundational step in Natural Language Processing (NLP) and large language models (LLMs). Different tokenization strategies produce different vocabularies and encoded representations.</p>
+
+      <h3>🔤 Word-Level Tokenization</h3>
+      <p>Splits text on whitespace and punctuation boundaries. Each word and each punctuation mark becomes its own token. This is the simplest approach but leads to very large vocabularies and cannot handle out-of-vocabulary (OOV) words.</p>
+      <ul>
+        <li><strong>Input:</strong> <code>"I love AI!"</code></li>
+        <li><strong>Tokens:</strong> <code>["I", "love", "AI", "!"]</code></li>
+      </ul>
+
+      <h3>🔡 Character-Level Tokenization</h3>
+      <p>Splits text into individual characters, including spaces and punctuation. The vocabulary is tiny (just the unique characters), but sequences become very long, losing word-level meaning.</p>
+      <ul>
+        <li><strong>Input:</strong> <code>"AI"</code></li>
+        <li><strong>Tokens:</strong> <code>["A", "I"]</code></li>
+      </ul>
+
+      <h3>🧩 Subword Tokenization (BPE)</h3>
+      <p><strong>Byte-Pair Encoding (BPE)</strong> is used by models like GPT-2, GPT-3, and RoBERTa. It strikes a balance between word and character levels:</p>
+      <ol>
+        <li>Start with a character-level vocabulary.</li>
+        <li>Count every adjacent pair of symbols in the corpus.</li>
+        <li>Merge the most frequent pair into a new symbol.</li>
+        <li>Repeat for a fixed number of merge operations.</li>
+      </ol>
+      <p>This tool trains BPE <em>on your input text</em>, so you can observe how the algorithm discovers common subword units. Pre-trained LLM tokenizers (e.g., GPT-4's <code>cl100k_base</code>) are trained on billions of tokens and have 50K–100K merge rules — the BPE here is an educational, faithful implementation of the same algorithm at smaller scale.</p>
+
+      <div class="merge-rules hidden" id="merge-rules-container">
+        <h3>🔀 BPE Merge Steps (Learned)</h3>
+        <p>The following merges were learned from your input text:</p>
+        <div id="merge-rules-table"></div>
+      </div>
+
+      <h3>🆚 Educational vs. Pre-trained Tokenizers</h3>
+      <p>This tool implements a <strong>genuine educational tokenizer</strong>. The word and character methods are deterministic. The BPE method trains on the provided input, faithfully following the original BPE algorithm. Pre-trained tokenizers (like those in Hugging Face's <code>tokenizers</code> library) are trained on massive corpora and have fixed vocabularies — they will produce different subword splits because their merge rules were learned from billions of sentences.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================================================================== -->
+<!--  FOOTER                                                            -->
+<!-- ================================================================== -->
+<footer class="app-footer">
+  AI-Powered Tokenizer &amp; Vocabulary Analyzer &nbsp;•&nbsp; Built with ❤️
+</footer>
+
+<!-- ================================================================== -->
+<!--  SCRIPTS                                                           -->
+<!-- ================================================================== -->
+<script src="js/tokenizer-engine.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
